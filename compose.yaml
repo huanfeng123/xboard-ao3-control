@@ -13,10 +13,15 @@ services:
     image: ghcr.io/cedar2025/xboard:latest
     restart: unless-stopped
     ports:
-      - "7001:7001"
+      - "9521:7001"
     volumes:
       - ./.env:/www/.env
       - ./.docker/.data/:/www/.docker/.data
+      - ./overrides/app/Protocols/General.php:/www/app/Protocols/General.php
+      - ./overrides/app/Protocols/ClashMeta.php:/www/app/Protocols/ClashMeta.php
+      - ./overrides/app/Protocols/SingBox.php:/www/app/Protocols/SingBox.php
+      - ./overrides/app/Http/Controllers/V2/Admin/Server/MachineController.php:/www/app/Http/Controllers/V2/Admin/Server/MachineController.php
+      - ./storage/app/public:/www/storage/app/public
       - ./storage/logs:/www/storage/logs
       - ./storage/theme:/www/storage/theme
       - ./plugins:/www/plugins

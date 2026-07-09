@@ -1,0 +1,11 @@
+.env
+.docker/.data/
+plugins/
+
+storage/logs/
+storage/theme/
+storage/app/public/xboard-node/releases/
+
+*.sqlite
+*.db
+*.pid
