@@ -14,7 +14,7 @@ class MachineController extends Controller
 {
     private const GITHUB_NODE_INSTALLER = 'https://raw.githubusercontent.com/huanfeng123/xboard-node-ao3/main/install.sh';
     private const GITHUB_NODE_RELEASES = 'https://github.com/huanfeng123/xboard-node-ao3/releases';
-    private const GITHUB_NODE_VERSION = 'v1.13-ao3.1';
+    private const GITHUB_NODE_VERSION = 'v1.13-ao3.2';
 
     /**
      * 获取机器列表（附带关联节点数）
