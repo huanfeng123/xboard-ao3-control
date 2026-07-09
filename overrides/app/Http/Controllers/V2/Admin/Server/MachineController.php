@@ -12,6 +12,10 @@ use Illuminate\Http\Request;
 
 class MachineController extends Controller
 {
+    private const GITHUB_NODE_INSTALLER = 'https://raw.githubusercontent.com/huanfeng123/xboard-node-ao3/main/install.sh';
+    private const GITHUB_NODE_RELEASES = 'https://github.com/huanfeng123/xboard-node-ao3/releases';
+    private const GITHUB_NODE_VERSION = 'v1.13-ao3.1';
+
     /**
      * 获取机器列表（附带关联节点数）
      */
@@ -202,14 +206,15 @@ class MachineController extends Controller
     private function buildInstallCommand(Request $request, ServerMachine $machine): string
     {
         $panelUrl = rtrim((string) (admin_setting('app_url') ?: $request->getSchemeAndHttpHost()), '/');
-        $installerUrl = $panelUrl . '/storage/xboard-node/install.sh';
 
         return sprintf(
-            'curl -fsSL %s | sudo bash -s -- --mode machine --panel %s --token %s --machine-id %d',
-            $installerUrl,
+            'curl -fsSL %s | sudo bash -s -- --mode machine --panel %s --token %s --machine-id %d --version %s --download-base %s',
+            self::GITHUB_NODE_INSTALLER,
             escapeshellarg($panelUrl),
             escapeshellarg($machine->token),
-            $machine->id
+            $machine->id,
+            escapeshellarg(self::GITHUB_NODE_VERSION),
+            escapeshellarg(self::GITHUB_NODE_RELEASES)
         );
     }
 }
