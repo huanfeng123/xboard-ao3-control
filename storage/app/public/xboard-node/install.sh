@@ -19,6 +19,9 @@ SERVICE_NAME="xboard-node.service"
 SERVICE_PATH="/etc/systemd/system/${SERVICE_NAME}"
 CLI_PATH="/usr/local/bin/xbctl"
 INSTALLER_COPY_PATH="${INSTALL_ROOT}/install.sh"
+INSTALL_CMD_PATH="/usr/local/bin/xboard-node-install"
+MACHINE_BIND_CMD_PATH="/usr/local/bin/xboard-machine-bind"
+NODE_BIND_CMD_PATH="/usr/local/bin/xboard-node-bind"
 CLI_BINARY_SOURCE=""
 DEFAULT_HEALTH_PORT=65530
 DEFAULT_KERNEL="singbox"
@@ -202,6 +205,11 @@ usage() {
     sudo bash install.sh --panel https://panel.example.com --token TOKEN --machine-id 1
     sudo bash install.sh upgrade
     sudo bash install.sh uninstall --purge --yes
+
+  INSTALLED LOCAL COMMANDS:
+    xboard-node-install  Re-run this installer locally after first install
+    xboard-machine-bind  Shortcut for machine mode binding
+    xboard-node-bind     Shortcut for node mode binding
 
 HELP
 }
@@ -618,6 +626,28 @@ WantedBy=multi-user.target
 EOF_UNIT
 }
 
+install_helper_commands() {
+    cat >"$TMP_DIR/xboard-node-install" <<EOF_HELPER
+#!/usr/bin/env bash
+set -Eeuo pipefail
+exec "${INSTALLER_COPY_PATH}" "\$@"
+EOF_HELPER
+
+    cat >"$TMP_DIR/xboard-machine-bind" <<EOF_HELPER
+#!/usr/bin/env bash
+set -Eeuo pipefail
+exec "${INSTALLER_COPY_PATH}" --mode machine "\$@"
+EOF_HELPER
+
+    cat >"$TMP_DIR/xboard-node-bind" <<EOF_HELPER
+#!/usr/bin/env bash
+set -Eeuo pipefail
+exec "${INSTALLER_COPY_PATH}" --mode node "\$@"
+EOF_HELPER
+
+    chmod 755 "$TMP_DIR/xboard-node-install" "$TMP_DIR/xboard-machine-bind" "$TMP_DIR/xboard-node-bind"
+}
+
 backup_existing_state() {
     BACKUP_PATH="${BACKUP_DIR}/$(date +%Y%m%d-%H%M%S)"
     mkdir -p "$BACKUP_PATH"
@@ -659,6 +689,9 @@ install_staged_files() {
     if [ -f "$0" ] && [ "$(realpath "$0")" != "$(realpath "$INSTALLER_COPY_PATH" 2>/dev/null || echo "$INSTALLER_COPY_PATH")" ]; then
         install -m 755 "$0" "$INSTALLER_COPY_PATH"
     fi
+    install -m 755 "$TMP_DIR/xboard-node-install" "$INSTALL_CMD_PATH"
+    install -m 755 "$TMP_DIR/xboard-machine-bind" "$MACHINE_BIND_CMD_PATH"
+    install -m 755 "$TMP_DIR/xboard-node-bind" "$NODE_BIND_CMD_PATH"
     install -m 755 "$TMP_DIR/xbctl" "$CLI_PATH"
     ln -sf "$CLI_PATH" /usr/bin/xbctl 2>/dev/null || true
     install -m 644 "$TMP_DIR/${SERVICE_NAME}" "$SERVICE_PATH"
@@ -717,6 +750,7 @@ perform_install() {
     stage_xbctl
     render_config
     render_service
+    install_helper_commands
     backup_existing_state
     install_staged_files
     start_service
@@ -728,6 +762,9 @@ perform_install() {
     if [ "$HEALTH_ENABLED" -eq 1 ]; then
         log_info "Health: http://127.0.0.1:${HEALTH_PORT}/healthz"
     fi
+    log_info "Local installer: ${INSTALL_CMD_PATH}"
+    log_info "Machine bind shortcut: ${MACHINE_BIND_CMD_PATH} --panel ${PANEL_URL} --token 'TOKEN' --machine-id ${MACHINE_ID:-N}"
+    log_info "Node bind shortcut: ${NODE_BIND_CMD_PATH} --panel ${PANEL_URL} --token 'TOKEN' --node-id ${NODE_ID:-N}"
     log_info "CLI: ${CLI_PATH}  (run '${CLI_PATH} list' if xbctl is not in PATH)"
 }
 
@@ -780,6 +817,9 @@ perform_uninstall() {
     fi
     rm -f "$BINARY_PATH"
     rm -f "$CLI_PATH"
+    rm -f "$INSTALL_CMD_PATH"
+    rm -f "$MACHINE_BIND_CMD_PATH"
+    rm -f "$NODE_BIND_CMD_PATH"
     rm -f /usr/bin/xbctl 2>/dev/null || true
     if [ "$PURGE" -eq 1 ]; then
         rm -rf "$INSTALL_ROOT"
